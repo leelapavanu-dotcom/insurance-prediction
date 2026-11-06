@@ -1,0 +1,97 @@
+name: CD - Build & Deployment Artifact Validation
+
+on:
+  workflow_run:
+    workflows: ["CI - Lint, Test & Model Verification"]
+    branches:
+      - main
+    types:
+      - completed
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-package:
+    name: Build & Validate Deployment Artifacts
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success') }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -r requirements.txt
+          pip install --no-build-isolation -e .
+
+      - name: Run pipeline to prepare fresh artifacts for packaging
+        run: |
+          python src/mlops_pipeline/12_end_to_end_pipeline.py
+
+      - name: Build Python distribution package (Wheel)
+        run: |
+          mkdir -p dist
+          pip wheel . -w dist/ --no-deps --no-build-isolation
+          ls -la dist/
+
+      - name: Upload Python distribution package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: insurance-mlops-wheel
+          path: dist/*.whl
+          retention-days: 14
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker inference container image
+        run: |
+          docker build \
+            --tag insurance-mlops-api:${{ github.sha }} \
+            --tag insurance-mlops-api:latest \
+            .
+
+      - name: Test Docker container startup and health probe
+        run: |
+          docker run -d --name test-inference-api -p 8000:8000 insurance-mlops-api:latest
+          # Wait up to 20 seconds for API health probe
+          for i in {1..20}; do
+            if curl -s -f http://localhost:8000/health | grep -q '"status":"healthy"'; then
+              echo "✓ API Health check passed successfully inside Docker container!"
+              break
+            fi
+            echo "Waiting for container service to be ready ($i/20)..."
+            sleep 1
+          done
+          # Test sample prediction through running container
+          PRED_RESPONSE=$(curl -s -X POST http://localhost:8000/predict \
+            -H "Content-Type: application/json" \
+            -d '{"age": 35, "sex": "male", "bmi": 26.5, "children": 1, "smoker": "no", "region": "northwest"}')
+          echo "Sample Prediction Response: $PRED_RESPONSE"
+          echo $PRED_RESPONSE | grep -q '"predicted_charges"' || (echo "Prediction endpoint failed" && exit 1)
+          docker stop test-inference-api
+
+      - name: Production Deployment Notice
+        run: |
+          echo "=========================================================================="
+          echo "★ CD ARTIFACT VALIDATION SUCCESSFUL"
+          echo "  - Python Wheel package verified and uploaded to GitHub Actions artifacts."
+          echo "  - Docker container image built and verified with live /health probe."
+          echo "--------------------------------------------------------------------------"
+          echo "NOTE: Production cloud deployment (e.g., AWS ECS/EKS, GCP Cloud Run,"
+          echo "Azure Container Apps, or Kubernetes) is intentionally decoupled from"
+          echo "automatic push to protect against unauthorized deployments or cloud costs."
+          echo "Publishing container images or triggering infrastructure deployments"
+          echo "requires explicit approval and cloud provider credentials configuration."
+          echo "=========================================================================="

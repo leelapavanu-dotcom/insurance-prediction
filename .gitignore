@@ -1,0 +1,95 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Testing and coverage
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+htmlcov/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# MLflow tracking, artifacts, and runs
+mlruns/
+mlartifacts/
+.mlflow/
+*.db
+
+# Data artifacts (keep folder structure with .gitkeep)
+data/processed/*
+!data/processed/.gitkeep
+data/reference/*
+!data/reference/.gitkeep
+
+# Serialized models and scalers (keep folder structure with .gitkeep)
+models/*
+!models/.gitkeep
+
+# Logs
+logs/
+*.log
+
+# Evaluation and drift reports (keep folder structure with .gitkeep)
+reports/*
+!reports/.gitkeep
+
+# Environment variables and secrets
+.env
+.env.*
+*.pem
+*.key

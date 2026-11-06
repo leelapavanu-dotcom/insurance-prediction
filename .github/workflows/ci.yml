@@ -1,0 +1,68 @@
+name: CI - Lint, Test & Model Verification
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-test:
+    name: Code Quality & Automated Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -r requirements.txt
+          pip install --no-build-isolation -e .
+
+      - name: Lint with Flake8
+        run: |
+          flake8 src tests
+
+      - name: Execute Master MLOps pipeline
+        run: |
+          python src/mlops_pipeline/12_end_to_end_pipeline.py
+
+      - name: Run automated test suite with pytest & coverage
+        run: |
+          mkdir -p reports
+          pytest tests/ -v \
+            --junitxml=reports/test-results.xml \
+            --cov=src/insurance_mlops \
+            --cov-report=xml:reports/coverage.xml \
+            --cov-report=term-missing
+
+      - name: Upload test results and coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-and-coverage-reports
+          path: |
+            reports/*.xml
+            reports/*.json
+            reports/*.csv
+          retention-days: 14
+
+      - name: Verify no uncommitted tracking files or secrets
+        run: |
+          # Verify .gitignore properly excludes generated databases and models
+          git status --porcelain

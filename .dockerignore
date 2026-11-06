@@ -1,0 +1,34 @@
+# Git and system
+.git
+.github
+.DS_Store
+
+# Python virtual environment and caches
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.xml
+
+# MLflow tracking runs and SQLite DBs
+mlruns/
+mlartifacts/
+*.db
+
+# Logs
+logs/
+*.log
+
+# Raw & Temporary Data (the container only needs serialized models and configs)
+data/raw/

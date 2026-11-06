@@ -1,0 +1,33 @@
+# ==============================================================================
+# Model Quality Gates Configuration
+# ==============================================================================
+# Thresholds derived from Cross-Validation and Baseline Comparison:
+# - Baseline (Linear Regression): CV RMSE = $6,123.35, CV R² = 0.7388, CV MAE = $4,234.98
+# - Candidate Winner (Random Forest): CV RMSE = $4,620.94, CV R² = 0.8508, CV MAE = $2,571.20
+#
+# Quality Gates require that any candidate promoted to production:
+# 1. Beatus the linear regression baseline by a significant margin.
+# 2. Explains at least 80% of variance on unseen held-out test data.
+# 3. Maintains RMSE below $5,200 and MAE below $3,000.
+# 4. Shows no excessive overfitting (Train R² - Test R² <= 0.15).
+
+quality_gates:
+  enabled: true
+  status: "configured"
+
+  # Core regression metrics evaluated on held-out test set
+  metrics:
+    r2_score:
+      min_threshold: 0.80
+      description: "Minimum acceptable R² (coefficient of determination). Baseline is 0.7388."
+    rmse:
+      max_threshold: 5200.0
+      description: "Maximum acceptable RMSE in USD. Baseline is $6,123.35; CV mean was $4,620.94."
+    mae:
+      max_threshold: 3000.0
+      description: "Maximum acceptable MAE in USD. Baseline is $4,234.98; CV mean was $2,571.20."
+
+  # Overfitting guardrails
+  promotion_rules:
+    must_beat_baseline: true
+    max_overfitting_delta_r2: 0.15  # |Train R² - Test R²| <= 0.15

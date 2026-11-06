@@ -1,0 +1,63 @@
+# ==============================================================================
+# Insurance Charges Prediction - Master Pipeline Configuration
+# ==============================================================================
+
+project:
+  name: "insurance-prediction"
+  version: "0.1.0"
+  random_seed: 42
+
+data:
+  raw_path: "data/raw/insurance.csv"
+  processed_dir: "data/processed"
+  train_path: "data/processed/train.csv"
+  test_path: "data/processed/test.csv"
+  reference_path: "data/reference/reference.csv"
+  test_size: 0.2
+  stratify_by: null          # Continuous regression target; smoker status can optionally be used
+  drop_duplicates: false     # Configurable: report duplicates and optionally drop or retain
+
+features:
+  target: "charges"
+  numerical:
+    - "age"
+    - "bmi"
+    - "children"
+  categorical:
+    - "sex"
+    - "smoker"
+    - "region"
+
+preprocessing:
+  scaler: "standard"
+  preprocessor_path: "models/preprocessor.joblib"
+  X_train_path: "data/processed/X_train.csv"
+  X_test_path: "data/processed/X_test.csv"
+  y_train_path: "data/processed/y_train.csv"
+  y_test_path: "data/processed/y_test.csv"
+
+models:
+  output_dir: "models"
+  best_model_name: "best_model.joblib"
+  preprocessor_name: "preprocessor.joblib"
+  candidates:
+    - "linear_regression"
+    - "random_forest"
+    - "gradient_boosting"
+
+mlflow:
+  tracking_uri: "sqlite:///mlruns.db"
+  experiment_name: "Insurance_Prediction"
+  registered_model_name: "insurance_charges_regressor"
+  artifact_location: "mlartifacts"
+
+inference:
+  sample_input_path: "data/processed/sample_inference_input.csv"
+  batch_output_path: "data/processed/batch_predictions.csv"
+
+monitoring:
+  reference_path: "data/reference/reference.csv"
+  p_value_threshold: 0.05
+  alert_drift_share_threshold: 0.33
+  report_json_path: "reports/drift_report.json"
+  report_csv_path: "reports/drift_report.csv"
